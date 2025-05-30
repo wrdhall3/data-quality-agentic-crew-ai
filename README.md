@@ -77,6 +77,56 @@ The query interface enables:
 - Interactive table view of results
 - Text display for aggregated results
 
+## Database Design
+
+The system uses two main tables to store trading data and data quality rules:
+
+### Trades Table
+The main table storing trading transaction data:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | int NOT NULL AUTO_INCREMENT | Primary key, unique identifier for each trade |
+| trade_date | date NOT NULL | Date when the trade was executed |
+| settlement_date | date NOT NULL | Date when the trade settles |
+| buy_sell | varchar(10) NOT NULL | Trade direction (BUY/SELL) |
+| net_amount | decimal(15,2) NOT NULL | Total value of the trade |
+| quantity | int NOT NULL | Number of units traded |
+| ticker | varchar(20) NOT NULL | Trading symbol |
+| cusip | varchar(20) NOT NULL | CUSIP identifier for the security |
+
+Sample Data:
+```sql
+id | trade_date  | settlement_date | buy_sell | net_amount  | quantity | ticker | cusip
+----|------------|----------------|----------|-------------|----------|--------|--------
+1   | 2024-05-30 | 2024-06-01    | BUY      | 15025.00    | 100      | AAPL   | 037833100
+2   | 2024-05-30 | 2024-06-01    | SELL     | 125037.50   | 50       | GOOGL  | 02079K107
+3   | 2024-05-30 | 2024-06-01    | BUY      | 24412.50    | 75       | MSFT   | 594918104
+```
+
+### Rules Table
+Stores data quality rules and their definitions:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| rule_id | int NOT NULL AUTO_INCREMENT | Primary key, unique identifier for each rule |
+| rule_name | varchar(255) NOT NULL | Short descriptive name of the rule |
+| rule_description | text NOT NULL | Detailed description of what the rule checks |
+| rule_text | text NOT NULL | The actual SQL query that identifies violations |
+| severity | enum('HIGH','MEDIUM','LOW') NOT NULL | Rule severity level |
+| created_at | timestamp | When the rule was created |
+| updated_at | timestamp | When the rule was last updated |
+| is_active | tinyint(1) | Whether the rule is currently active (1) or disabled (0) |
+
+Sample Data:
+```sql
+rule_id | rule_name           | rule_description                           | severity | rule_text                                              | created_at           | updated_at           | is_active
+--------|--------------------|--------------------------------------------|----------|--------------------------------------------------------|---------------------|---------------------|----------
+1       | Positive Quantity  | Ensures trade quantities are greater than 0 | HIGH     | SELECT * FROM trades WHERE quantity <= 0               | 2024-05-30 10:00:00 | 2024-05-30 10:00:00 | 1
+2       | Valid Net Amount   | Checks if net amount matches quantity      | MEDIUM   | SELECT * FROM trades WHERE net_amount <= 0             | 2024-05-30 10:15:00 | 2024-05-30 10:15:00 | 1
+3       | Settlement Check   | Validates settlement is after trade date   | HIGH     | SELECT * FROM trades WHERE settlement_date <= trade_date| 2024-05-30 10:30:00 | 2024-05-30 10:30:00 | 1
+```
+
 ## Agentic AI Introduction
 
 Agentic AI represents a paradigm shift in artificial intelligence where AI systems act as autonomous agents with specific roles, goals, and capabilities. These agents can:
