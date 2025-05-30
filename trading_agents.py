@@ -145,55 +145,68 @@ class SQLExecutionTool(BaseTool):
         except Exception as e:
             return f"Error executing query: {str(e)}"
 
-# Database configuration
-DB_URI = "mysql+pymysql://root:Ridgewood2024@localhost:3306/trading_data"
+def main():
+    # Database configuration
+    DB_URI = "mysql+pymysql://root:Ridgewood2024@localhost:3306/trading_data"
 
-# Initialize tools
-nl2sql_tool = NL2SQLTool(DB_URI)
-sql_execution_tool = SQLExecutionTool(DB_URI)
+    # Initialize tools
+    nl2sql_tool = NL2SQLTool(DB_URI)
+    sql_execution_tool = SQLExecutionTool(DB_URI)
 
-# Create Agents
-translator_agent = Agent(
-    role='SQL Translator',
-    goal='Convert natural language questions into SQL queries',
-    backstory="""You are an expert in converting natural language questions into SQL queries.
-    You understand database schemas and can create efficient SQL queries.""",
-    tools=[nl2sql_tool],
-    verbose=True,
-    llm=llm
-)
+    # Create Agents
+    translator_agent = Agent(
+        role='SQL Translator',
+        goal='Convert natural language questions into SQL queries',
+        backstory="""You are an expert in converting natural language questions into SQL queries.
+        You understand database schemas and can create efficient SQL queries.""",
+        tools=[nl2sql_tool],
+        verbose=True,
+        llm=llm
+    )
 
-executor_agent = Agent(
-    role='SQL Executor',
-    goal='Execute SQL queries and return results',
-    backstory="""You are a database expert who executes SQL queries and returns results in a clear format.
-    You understand SQL and can interpret query results effectively.""",
-    tools=[sql_execution_tool],
-    verbose=True,
-    llm=llm
-)
+    executor_agent = Agent(
+        role='SQL Executor',
+        goal='Execute SQL queries and return results',
+        backstory="""You are a database expert who executes SQL queries and returns results in a clear format.
+        You understand SQL and can interpret query results effectively.""",
+        tools=[sql_execution_tool],
+        verbose=True,
+        llm=llm
+    )
 
-# Create Tasks
-translation_task = Task(
-    description="Convert this question to SQL: What is the average quantity of shares being traded?",
-    expected_output="A SQL query that calculates the average quantity from the trades table",
-    agent=translator_agent
-)
+    while True:
+        # Get user input
+        print("\nEnter your question about the trading data (or 'quit' to exit):")
+        user_question = input("> ")
+        
+        # Check if user wants to quit
+        if user_question.lower() in ['quit', 'exit', 'q']:
+            print("Goodbye!")
+            break
 
-execution_task = Task(
-    description="Execute the SQL query provided by the translator agent",
-    expected_output="The results of the SQL query execution",
-    agent=executor_agent
-)
+        # Create Tasks with user's question
+        translation_task = Task(
+            description=f"Convert this question to SQL: {user_question}",
+            expected_output="A SQL query that answers the user's question",
+            agent=translator_agent
+        )
 
-# Create and run the crew
-crew = Crew(
-    agents=[translator_agent, executor_agent],
-    tasks=[translation_task, execution_task],
-    verbose=True
-)
+        execution_task = Task(
+            description="Execute the SQL query provided by the translator agent",
+            expected_output="The results of the SQL query execution",
+            agent=executor_agent
+        )
 
-# Run the crew
-result = crew.kickoff()
+        # Create and run the crew
+        crew = Crew(
+            agents=[translator_agent, executor_agent],
+            tasks=[translation_task, execution_task],
+            verbose=True
+        )
 
-print("Final Result:", result) 
+        # Run the crew
+        result = crew.kickoff()
+        print("\nResult:", result)
+
+if __name__ == "__main__":
+    main() 
