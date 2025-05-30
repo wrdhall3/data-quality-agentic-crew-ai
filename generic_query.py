@@ -16,7 +16,7 @@ load_dotenv()
 # Configure OpenAI
 llm = ChatOpenAI(
     model="gpt-4",
-    temperature=0.7,
+    temperature=0,
     api_key=os.getenv('OPENAI_API_KEY')
 )
 
@@ -141,7 +141,31 @@ class SQLExecutionTool(BaseTool):
         try:
             with self._engine.connect() as conn:
                 result = pd.read_sql(sql_query, conn)
-                return result.to_string()
+                
+                # If the result has rows and columns, format as a table
+                if not result.empty:
+                    # Format the DataFrame with consistent column widths
+                    formatted_result = result.to_string(index=False)
+                    
+                    # Add a header separator line
+                    header_line = formatted_result.split('\n')[0]
+                    separator = '-' * len(header_line)
+                    
+                    # Combine header, separator, and data
+                    return f"{header_line}\n{separator}\n" + '\n'.join(formatted_result.split('\n')[1:])
+                else:
+                    # For queries that return no rows (like aggregates)
+                    # Try to extract a single value if that's all we have
+                    if len(result.columns) == 1:
+                        value = result.iloc[0, 0]
+                        col_name = result.columns[0]
+                        # Format as a single-cell table
+                        header = f"{col_name}"
+                        separator = '-' * len(header)
+                        return f"{header}\n{separator}\n{value}"
+                    else:
+                        return "No results found"
+                        
         except Exception as e:
             return f"Error executing query: {str(e)}"
 
@@ -166,9 +190,10 @@ def main():
 
     executor_agent = Agent(
         role='SQL Executor',
-        goal='Execute SQL queries and return results',
+        goal='Execute SQL queries and return results in a clear format',
         backstory="""You are a database expert who executes SQL queries and returns results in a clear format.
-        You understand SQL and can interpret query results effectively.""",
+        You understand SQL and can interpret query results effectively.
+        Always format results in a consistent table format, even for single values.""",
         tools=[sql_execution_tool],
         verbose=True,
         llm=llm
@@ -192,8 +217,9 @@ def main():
         )
 
         execution_task = Task(
-            description="Execute the SQL query provided by the translator agent",
-            expected_output="The results of the SQL query execution",
+            description="""Execute the SQL query and return results in a consistent table format.
+            Make sure to format the output as a proper table with headers and separators.""",
+            expected_output="The results of the SQL query execution in a table format",
             agent=executor_agent
         )
 
