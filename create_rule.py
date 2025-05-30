@@ -199,8 +199,8 @@ def main():
         try:
             # Parse the rule result
             if isinstance(rule_result, str):
-                # Check if it's already JSON
-                if rule_result.strip().startswith("{"):
+                # Check if there's a dictionary in the response
+                if "{" in rule_result and "}" in rule_result:
                     start = rule_result.find("{")
                     end = rule_result.rfind("}") + 1
                     json_str = rule_result[start:end]
@@ -221,31 +221,62 @@ def main():
                     else:
                         rule_data = json.loads(json_str)
                 else:
-                    # Parse formatted text response
-                    lines = rule_result.strip().split("\n")
-                    rule_data = {}
-                    for line in lines:
-                        line = line.strip()
-                        if "Rule Name:" in line:
-                            rule_data["rule_name"] = line.split("Rule Name:")[1].strip()
-                        elif "Name:" in line:  # Alternative format
-                            rule_data["rule_name"] = line.split("Name:")[1].strip()
-                        elif "Rule Description:" in line:
-                            rule_data["rule_description"] = line.split("Rule Description:")[1].strip()
-                        elif "Description:" in line:  # Alternative format
-                            rule_data["rule_description"] = line.split("Description:")[1].strip()
-                        elif "Severity:" in line:
-                            rule_data["severity"] = line.split("Severity:")[1].strip()
-                        elif "SQL Query:" in line:
-                            rule_data["rule_text"] = line.split("SQL Query:")[1].strip()
-                        elif "Rule SQL:" in line:  # Alternative format
-                            rule_data["rule_text"] = line.split("Rule SQL:")[1].strip()
-                        elif "Rule ID:" in line:
-                            try:
-                                rule_data["rule_id"] = int(line.split("Rule ID:")[1].strip())
-                            except ValueError:
-                                # If we can't parse the ID, we'll let the database assign one
-                                pass
+                    # Try to parse comma-separated format first
+                    try:
+                        rule_data = {}
+                        # Remove any prefix text before the actual data
+                        if ":" in rule_result:
+                            # Split on the first colon if it's a prefix like "The complete rule definition is as follows:"
+                            parts = rule_result.split(":", 1)
+                            if not any(key in parts[0].lower() for key in ["name", "description", "severity", "sql", "id"]):
+                                rule_result = parts[1].strip()
+                        
+                        # Split by comma and handle each field
+                        if "," in rule_result and ":" in rule_result:
+                            fields = [f.strip() for f in rule_result.split(",")]
+                            for field in fields:
+                                if ":" not in field:
+                                    continue
+                                key, value = [x.strip() for x in field.split(":", 1)]
+                                # Clean up quotes
+                                value = value.strip("'").strip('"')
+                                
+                                if key.lower() == "name":
+                                    rule_data["rule_name"] = value
+                                elif key.lower() == "description":
+                                    rule_data["rule_description"] = value
+                                elif key.lower() == "severity":
+                                    rule_data["severity"] = value
+                                elif key.lower() in ["sql query", "rule sql"]:
+                                    rule_data["rule_text"] = value
+                                elif key.lower() == "rule id":
+                                    try:
+                                        rule_data["rule_id"] = int(value)
+                                    except ValueError:
+                                        pass
+                        else:
+                            # Line by line parsing
+                            lines = [line.strip().lstrip('-').strip() for line in rule_result.split("\n") if line.strip() and ":" in line]
+                            for line in lines:
+                                if "Name:" in line:
+                                    rule_data["rule_name"] = line.split("Name:")[1].strip().strip("'\"")
+                                elif "Description:" in line:
+                                    rule_data["rule_description"] = line.split("Description:")[1].strip().strip("'\"")
+                                elif "Severity:" in line:
+                                    rule_data["severity"] = line.split("Severity:")[1].strip().strip("'\"")
+                                elif any(query_variant in line for query_variant in ["SQL Query:", "SQL query:", "Rule SQL:"]):
+                                    # Find which variant is in the line
+                                    query_key = next(key for key in ["SQL Query:", "SQL query:", "Rule SQL:"] if key in line)
+                                    rule_data["rule_text"] = line.split(query_key)[1].strip().strip("'\"")
+                                elif "Rule ID:" in line:
+                                    try:
+                                        rule_data["rule_id"] = int(line.split("Rule ID:")[1].strip())
+                                    except ValueError:
+                                        pass
+                    except Exception as e:
+                        print(f"\nError parsing response: {str(e)}")
+                        print("Raw response:", rule_result)
+                        continue
                     
                     # Verify we have all required fields
                     required_fields = ["rule_name", "rule_description", "severity", "rule_text"]
@@ -253,6 +284,7 @@ def main():
                     if missing_fields:
                         print("\nError: Missing required fields:", ", ".join(missing_fields))
                         print("Raw response:", rule_result)
+                        print("Parsed data:", rule_data)
                         continue
             elif isinstance(rule_result, dict):
                 rule_data = rule_result
