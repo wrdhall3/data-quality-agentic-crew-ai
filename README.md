@@ -11,32 +11,6 @@ This project demonstrates the power of Agentic AI in maintaining data quality by
 - Performing natural language queries against trading data
 - Providing an intuitive UI for all operations
 
-## User Interface
-
-### Create Rule Page
-![Create Rule Interface](images/create_rule.png)
-The Create Rule interface allows users to:
-- Enter natural language descriptions of data quality rules
-- View the generated SQL query
-- See rule details including severity and description
-- Get immediate feedback on rule creation
-
-### Check Violations Page
-![Check Violations Interface](images/check_violations.png)
-The violations checking interface provides:
-- Options to check all rules or filter by specific criteria
-- Clear violation reports with affected records
-- Ability to filter rules by severity
-- Interactive selection of specific rules to check
-
-### Query Database Page
-![Query Database Interface](images/query_database.png)
-The query interface enables:
-- Natural language queries against trading data
-- Display of the translated SQL query
-- Interactive table view of results
-- Text display for aggregated results
-
 ## Running the Code
 
 ### Using the Streamlit UI (Recommended)
@@ -76,6 +50,32 @@ Use individual files when:
 - Testing specific components
 - Debugging issues
 - Running batch operations
+
+## User Interface
+
+### Create Rule Page
+![Create Rule Interface](images/create_rule.png)
+The Create Rule interface allows users to:
+- Enter natural language descriptions of data quality rules
+- View the generated SQL query
+- See rule details including severity and description
+- Get immediate feedback on rule creation
+
+### Check Violations Page
+![Check Violations Interface](images/check_violations.png)
+The violations checking interface provides:
+- Options to check all rules or filter by specific criteria
+- Clear violation reports with affected records
+- Ability to filter rules by severity
+- Interactive selection of specific rules to check
+
+### Query Database Page
+![Query Database Interface](images/query_database.png)
+The query interface enables:
+- Natural language queries against trading data
+- Display of the translated SQL query
+- Interactive table view of results
+- Text display for aggregated results
 
 ## Agentic AI Introduction
 
