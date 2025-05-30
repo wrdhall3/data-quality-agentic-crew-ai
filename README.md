@@ -102,49 +102,110 @@ CrewAI is a framework for building and orchestrating multiple AI agents that wor
 ### Rule Creation Workflow
 ```mermaid
 graph TD
-    A[User Input] --> B[Rule Creator Agent]
-    B --> C[Rule Generator Tool]
-    C --> D[Database]
-    
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#dfd,stroke:#333,stroke-width:2px
-    style D fill:#fdd,stroke:#333,stroke-width:2px
-```
-
-### Violation Checking Workflow
-```mermaid
-graph TD
-    A[User Input] --> B[Rule Checker Agent]
-    B --> C[Rule Execution Tool]
-    C --> D[Database]
-    C --> E[Violation Report]
+    subgraph Crew[Rule Creation Crew]
+        A[User Input] --> B[Rule Creator Agent]
+        B --> C[Rule Generator Tool]
+        C --> D[Database]
+        C --> E[Rule Definition]
+        E --> F[Rule Validation]
+        F --> D
+    end
     
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#bbf,stroke:#333,stroke-width:2px
     style C fill:#dfd,stroke:#333,stroke-width:2px
     style D fill:#fdd,stroke:#333,stroke-width:2px
     style E fill:#dff,stroke:#333,stroke-width:2px
+    style F fill:#dff,stroke:#333,stroke-width:2px
+    style Crew fill:#fff,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
-### Query Workflow
+### Violation Checking Workflow
 ```mermaid
 graph TD
-    A[User Question] --> B[Translator Agent]
-    B --> C[NL2SQL Tool]
-    C --> D[SQL Query]
-    D --> E[Executor Agent]
-    E --> F[SQL Execution Tool]
-    F --> G[Results]
+    subgraph Crew[Violation Check Crew]
+        A[User Input] --> B[Rule Checker Agent]
+        B --> C[Rule Execution Tool]
+        C --> D[Database: Rules]
+        C --> E[Database: Trades]
+        C --> F[Violation Analysis]
+        F --> G[Violation Report]
+        
+        %% Additional flows
+        D --> C
+        E --> F
+    end
     
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#bbf,stroke:#333,stroke-width:2px
     style C fill:#dfd,stroke:#333,stroke-width:2px
     style D fill:#fdd,stroke:#333,stroke-width:2px
+    style E fill:#fdd,stroke:#333,stroke-width:2px
+    style F fill:#dff,stroke:#333,stroke-width:2px
+    style G fill:#dff,stroke:#333,stroke-width:2px
+    style Crew fill:#fff,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+```
+
+### Query Workflow
+```mermaid
+graph TD
+    subgraph Crew[Query Processing Crew]
+        A[User Question] --> B[Translator Agent]
+        B --> C[NL2SQL Tool]
+        C --> D[SQL Query]
+        D --> E[Executor Agent]
+        E --> F[SQL Execution Tool]
+        F --> G[Database: Trades]
+        G --> H[Raw Results]
+        H --> I[Executor Agent]
+        I --> J[Formatted Results]
+        
+        %% Additional flows
+        C --> K[Schema Validation]
+        K --> D
+    end
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#dfd,stroke:#333,stroke-width:2px
+    style D fill:#dff,stroke:#333,stroke-width:2px
     style E fill:#bbf,stroke:#333,stroke-width:2px
     style F fill:#dfd,stroke:#333,stroke-width:2px
-    style G fill:#dff,stroke:#333,stroke-width:2px
+    style G fill:#fdd,stroke:#333,stroke-width:2px
+    style H fill:#dff,stroke:#333,stroke-width:2px
+    style I fill:#bbf,stroke:#333,stroke-width:2px
+    style J fill:#dff,stroke:#333,stroke-width:2px
+    style K fill:#dff,stroke:#333,stroke-width:2px
+    style Crew fill:#fff,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
 ```
+
+### Color Legend
+- 🟪 Pink: User Interaction
+- 🟦 Blue: Agents
+- 🟩 Green: Tools
+- 🟥 Red: Databases
+- 🟨 Light Blue: Intermediate Results/Processing
+- ⬜ White (Dashed): Crew Boundary
+
+### Key Components in Each Workflow
+
+#### Rule Creation
+- **Crew**: Orchestrates the rule creation process
+- **Agent**: Rule Creator Agent interprets user requirements
+- **Tool**: Rule Generator Tool creates SQL rules
+- **Process**: Includes validation and database storage
+
+#### Violation Checking
+- **Crew**: Manages violation detection workflow
+- **Agent**: Rule Checker Agent coordinates checking
+- **Tool**: Rule Execution Tool runs rules against data
+- **Process**: Includes rule retrieval and violation analysis
+
+#### Query Processing
+- **Crew**: Coordinates natural language query processing
+- **Agents**: Translator and Executor agents work together
+- **Tools**: NL2SQL and SQL Execution tools
+- **Process**: Includes schema validation and result formatting
 
 ## Project Components
 
